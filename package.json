@@ -1,0 +1,8 @@
+{
+  "name": "plate-decoder",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Decode UK number plates: region, DVLA office and registration date",
+  "scripts": { "test": "node --test test/*.test.js" },
+  "license": "MIT"
+}

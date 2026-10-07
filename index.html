@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UK Plate Decoder</title>
+<meta name="description" content="Type a UK number plate to see where and when it was first registered.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Oswald:wght@600&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect x='2' y='16' width='60' height='32' rx='5' fill='%23f7c600' stroke='%23111' stroke-width='3'/%3E%3Crect x='4' y='18' width='12' height='28' rx='3' fill='%23123a8f'/%3E%3C/svg%3E">
+<style>
+  :root {
+    --bg: #f4f2ec; --surface: #ffffff; --ink: #16181d; --muted: #5d6270; --line: #e2dfd6;
+    --accent: #123a8f; --plate-yellow: #f7c600; --plate-white: #fbfbf8; --plate-ink: #111;
+    --warn-bg: #fff4e0; --warn-ink: #7a4b00; --ok: #1f7a4d;
+    --shadow: 0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #111317; --surface: #1a1d23; --ink: #eceef2; --muted: #9aa0ad; --line: #2b2f37;
+      --accent: #7ea6ff; --warn-bg: #3a2c12; --warn-ink: #ffd48a; --ok: #5fd39a;
+      --shadow: 0 1px 2px rgba(0,0,0,.4), 0 8px 24px rgba(0,0,0,.3);
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 16px/1.5 Inter, system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+  main { max-width: 720px; margin: 0 auto; padding: 48px 16px 64px; }
+  h1 { font-size: clamp(28px, 6vw, 40px); line-height: 1.1; margin: 0 0 8px; letter-spacing: -0.02em; }
+  .lede { color: var(--muted); margin: 0 0 32px; }
+
+  /* The plate input */
+  .plate {
+    display: flex; align-items: stretch; border: 3px solid var(--plate-ink); border-radius: 10px;
+    background: var(--plate-yellow); overflow: hidden; box-shadow: var(--shadow); transition: background .2s;
+  }
+  .plate.front { background: var(--plate-white); }
+  .plate .band {
+    flex: 0 0 auto; width: 52px; background: var(--accent); color: #fff; display: flex; flex-direction: column;
+    align-items: center; justify-content: flex-end; padding-bottom: 8px; font: 700 15px/1 Inter, sans-serif; letter-spacing: .04em;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .plate .band { background: #123a8f; } }
+  .plate input {
+    flex: 1; min-width: 0; border: 0; background: transparent; color: var(--plate-ink); text-align: center;
+    font: 600 clamp(40px, 11vw, 76px)/1 Oswald, 'Arial Narrow', sans-serif; letter-spacing: .06em;
+    padding: 14px 8px; text-transform: uppercase; outline: none;
+  }
+  .plate input::placeholder { color: rgba(0,0,0,.22); }
+  .plate:focus-within { outline: 3px solid var(--accent); outline-offset: 3px; }
+  .controls { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
+  .examples { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip {
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 999px;
+    padding: 5px 12px; font: 500 13px/1.4 Inter, sans-serif; cursor: pointer;
+  }
+  .chip:hover { border-color: var(--muted); }
+  .toggle { font-size: 13px; color: var(--muted); background: none; border: 0; cursor: pointer; padding: 4px 0; text-decoration: underline; text-underline-offset: 3px; }
+
+  /* Result */
+  #result { margin-top: 32px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+  .card-head { padding: 22px 24px 18px; border-bottom: 1px solid var(--line); }
+  .format { font-size: 12px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+  .headline { font-size: 22px; font-weight: 700; margin: 6px 0 0; line-height: 1.3; letter-spacing: -0.01em; }
+  .parts { list-style: none; margin: 0; padding: 0; }
+  .parts li { display: grid; grid-template-columns: 96px 1fr; gap: 16px; padding: 16px 24px; border-bottom: 1px solid var(--line); }
+  .parts li:last-child { border-bottom: 0; }
+  .chars {
+    align-self: start; justify-self: start; font: 600 22px/1 Oswald, sans-serif; letter-spacing: .06em; color: var(--plate-ink);
+    background: var(--plate-yellow); border: 2px solid var(--plate-ink); border-radius: 6px; padding: 6px 10px; min-width: 44px; text-align: center;
+  }
+  .label { font-size: 13px; color: var(--muted); font-weight: 500; }
+  .value { font-weight: 600; }
+  .detail { color: var(--muted); font-size: 14px; margin-top: 2px; }
+  .warnings { padding: 14px 24px; background: var(--warn-bg); color: var(--warn-ink); font-size: 14px; }
+  .warnings p { margin: 4px 0; }
+  .note { padding: 14px 24px; font-size: 14px; color: var(--muted); border-top: 1px solid var(--line); }
+  .error { padding: 18px 24px; color: var(--warn-ink); background: var(--warn-bg); border-radius: 12px; }
+  .empty { color: var(--muted); text-align: center; padding: 24px; }
+
+  /* Reference */
+  details { margin-top: 40px; background: var(--surface); border: 1px solid var(--line); border-radius: 14px; }
+  summary { cursor: pointer; padding: 16px 24px; font-weight: 600; }
+  .ref { padding: 0 24px 20px; font-size: 14px; }
+  .ref table { width: 100%; border-collapse: collapse; }
+  .ref th, .ref td { text-align: left; padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .ref th { color: var(--muted); font-weight: 500; }
+  .ref code { font: 600 14px Oswald, sans-serif; letter-spacing: .05em; }
+  footer { margin-top: 40px; font-size: 13px; color: var(--muted); }
+  footer a { color: inherit; }
+
+  @media (max-width: 480px) {
+    main { padding-top: 32px; }
+    .plate .band { width: 36px; font-size: 12px; }
+    .parts li { grid-template-columns: 1fr; gap: 8px; padding: 14px 18px; }
+    .card-head, .warnings, .note { padding-left: 18px; padding-right: 18px; }
+  }
+</style>
+</head>
+<body>
+<main>
+  <h1>UK Plate Decoder</h1>
+  <p class="lede">Type a number plate to see where and when it was first registered.</p>
+
+  <label class="plate" id="plate" for="reg">
+    <span class="band" aria-hidden="true">UK</span>
+    <input id="reg" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="9" placeholder="AB12 CDE" aria-label="Number plate">
+  </label>
+  <div class="controls">
+    <div class="examples" aria-label="Examples">
+      <button class="chip" data-reg="LV75 ZXM">LV75 ZXM</button>
+      <button class="chip" data-reg="SK09 FHR">SK09 FHR</button>
+      <button class="chip" data-reg="P472 KLD">P472 KLD</button>
+      <button class="chip" data-reg="GHN 418T">GHN 418T</button>
+      <button class="chip" data-reg="BXI 4821">BXI 4821</button>
+    </div>
+    <button class="toggle" id="side" type="button">Show front plate</button>
+  </div>
+
+  <section id="result" aria-live="polite"></section>
+
+  <details>
+    <summary>How UK plates work</summary>
+    <div class="ref">
+      <table>
+        <tr><th>Style</th><th>Example</th><th>Used</th><th>What it tells you</th></tr>
+        <tr><td>Current</td><td><code>AB12 CDE</code></td><td>2001 –</td><td>Region, local office and a six-month registration window</td></tr>
+        <tr><td>Prefix</td><td><code>A123 BCD</code></td><td>1983 – 2001</td><td>Year letter at the front</td></tr>
+        <tr><td>Suffix</td><td><code>ABC 123D</code></td><td>1963 – 1983</td><td>Year letter at the end</td></tr>
+        <tr><td>Dateless</td><td><code>ABC 123</code></td><td>Before 1963</td><td>No age information</td></tr>
+        <tr><td>Northern Ireland</td><td><code>ABZ 1234</code></td><td>1903 –</td><td>County; no age information</td></tr>
+        <tr><td>Q plate</td><td><code>Q123 ABC</code></td><td>1983 –</td><td>Vehicle of unknown age or identity</td></tr>
+      </table>
+      <p>On current plates the age identifier changes twice a year: in March it’s the year (<code>26</code> = March 2026) and in September it’s the year plus 50 (<code>76</code> = September 2026).</p>
+      <p>Private plates can move between vehicles, so a plate only tells you about the vehicle it was first issued to. A plate can never make a vehicle look newer than it is.</p>
+    </div>
+  </details>
+
+  <footer>Runs entirely in your browser. Nothing you type is sent anywhere. Decoding is based on published DVLA rules and is a guide, not an official record.</footer>
+</main>
+
+<script src="decoder.js"></script>
+<script>
+(function () {
+  const input = document.getElementById('reg');
+  const out = document.getElementById('result');
+  const plate = document.getElementById('plate');
+  const sideBtn = document.getElementById('side');
+
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+  function render(value) {
+    const r = PlateDecoder.decode(value);
+    if (!PlateDecoder.normalise(value)) {
+      out.innerHTML = '<p class="empty">Try one of the examples above, or your own plate.</p>';
+      return;
+    }
+    if (!r.ok) { out.innerHTML = `<div class="error">${esc(r.error)}</div>`; return; }
+    const parts = r.parts.map((p) => `
+      <li>
+        <span class="chars">${esc(p.chars)}</span>
+        <div>
+          <div class="label">${esc(p.label)}</div>
+          <div class="value">${esc(p.value)}</div>
+          ${p.detail ? `<div class="detail">${esc(p.detail)}</div>` : ''}
+        </div>
+      </li>`).join('');
+    const warnings = r.warnings.length ? `<div class="warnings">${r.warnings.map((w) => `<p>${esc(w)}</p>`).join('')}</div>` : '';
+    const note = r.note ? `<div class="note">${esc(r.note)}</div>` : '';
+    out.innerHTML = `
+      <article class="card">
+        <div class="card-head">
+          <div class="format">${esc(r.format)}</div>
+          <p class="headline">${esc(r.headline)}</p>
+        </div>
+        ${warnings}
+        <ul class="parts">${parts}</ul>
+        ${note}
+      </article>`;
+  }
+
+  function update(push) {
+    render(input.value);
+    const raw = PlateDecoder.normalise(input.value);
+    if (push) history.replaceState(null, '', raw ? '#' + raw : location.pathname);
+  }
+
+  input.addEventListener('input', () => update(true));
+  document.querySelectorAll('[data-reg]').forEach((b) => b.addEventListener('click', () => {
+    input.value = b.dataset.reg; update(true); input.focus();
+  }));
+  sideBtn.addEventListener('click', () => {
+    const front = plate.classList.toggle('front');
+    sideBtn.textContent = front ? 'Show rear plate' : 'Show front plate';
+  });
+  window.addEventListener('hashchange', () => { const h = decodeURIComponent(location.hash.slice(1)); const d = PlateDecoder.decode(h); if (PlateDecoder.normalise(input.value) !== d.raw) { input.value = d.ok ? d.display : h; update(false); } });
+
+  const fromHash = PlateDecoder.decode(decodeURIComponent(location.hash.slice(1)));
+  input.value = fromHash.ok ? fromHash.display : decodeURIComponent(location.hash.slice(1));
+  update(false);
+})();
+</script>
+</body>
+</html>
