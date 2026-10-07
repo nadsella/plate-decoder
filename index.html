@@ -12,7 +12,7 @@
 <style>
   :root {
     --bg: #f4f2ec; --surface: #ffffff; --ink: #16181d; --muted: #5d6270; --line: #e2dfd6;
-    --accent: #123a8f; --plate-yellow: #f7c600; --plate-blue: #1f5fd1; --plate-band: #0b2560; --plate-white: #fbfbf8; --plate-ink: #111;
+    --accent: #123a8f; --plate-yellow: #f7c600; --plate-white: #fbfbf8; --plate-ink: #111;
     --warn-bg: #fff4e0; --warn-ink: #7a4b00; --ok: #1f7a4d;
     --shadow: 0 1px 2px rgba(0,0,0,.06), 0 8px 24px rgba(0,0,0,.06);
   }
@@ -33,21 +33,20 @@
   /* The plate input */
   .plate {
     display: flex; align-items: stretch; border: 3px solid var(--plate-ink); border-radius: 10px;
-    background: var(--plate-blue); overflow: hidden; box-shadow: var(--shadow); transition: background .2s;
+    background: var(--plate-yellow); overflow: hidden; box-shadow: var(--shadow); transition: background .2s;
   }
   .plate.front { background: var(--plate-white); }
-  .plate.front input { color: var(--plate-ink); }
-  .plate.front input::placeholder { color: rgba(0,0,0,.22); }
   .plate .band {
-    flex: 0 0 auto; width: 52px; background: var(--plate-band); color: #fff; display: flex; flex-direction: column;
+    flex: 0 0 auto; width: 52px; background: var(--accent); color: #fff; display: flex; flex-direction: column;
     align-items: center; justify-content: flex-end; padding-bottom: 8px; font: 700 15px/1 Inter, sans-serif; letter-spacing: .04em;
   }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .plate .band { background: #123a8f; } }
   .plate input {
-    flex: 1; min-width: 0; border: 0; background: transparent; color: #fff; text-align: center;
+    flex: 1; min-width: 0; border: 0; background: transparent; color: var(--plate-ink); text-align: center;
     font: 600 clamp(40px, 11vw, 76px)/1 Oswald, 'Arial Narrow', sans-serif; letter-spacing: .06em;
     padding: 14px 8px; text-transform: uppercase; outline: none;
   }
-  .plate input::placeholder { color: rgba(255,255,255,.4); }
+  .plate input::placeholder { color: rgba(0,0,0,.22); }
   .plate:focus-within { outline: 3px solid var(--accent); outline-offset: 3px; }
   .controls { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 14px; flex-wrap: wrap; }
   .examples { display: flex; gap: 8px; flex-wrap: wrap; }
